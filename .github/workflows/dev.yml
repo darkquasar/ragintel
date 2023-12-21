@@ -93,9 +93,7 @@ jobs:
 
       - name: build documentation
         run: |
-          ls -lah
-          ls $GITHUB_WORKSPACE
-          poetry install -E doc
+          poetry install --no-root -E doc
           mkdocs build
           git config --global user.name Docs deploy
           git config --global user.email docs@dummy.bot.com
