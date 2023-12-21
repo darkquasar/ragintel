@@ -103,7 +103,7 @@ jobs:
 
       - name: build documentation
         run: |
-          poetry install --no-root -E doc -vvv
+          poetry install --no-root -E doc
           mkdocs build
           git config --global user.name Docs deploy
           git config --global user.email docs@dummy.bot.com
