@@ -12,6 +12,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  RUN_NOTIFICATION_JOB: false
+
 # contains 3 jobs: test, publish_dev_build and notification
 jobs:
   test:
@@ -122,15 +125,15 @@ jobs:
           skip_existing: true
 
   notification:
-    needs: [test,publish_dev_build]
-    if: always()
+    needs: [test, publish_dev_build]
     runs-on: ubuntu-latest
+
     steps:
       - uses: martialonline/workflow-status@v2
         id: check
 
       - name: build success notification via email
-        if: ${{ steps.check.outputs.status == 'success' }}
+        if: ${{ steps.check.outputs.status == 'success' && env.RUN_NOTIFICATION_JOB == 'true'}}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.BUILD_NOTIFY_MAIL_SERVER }}
@@ -154,7 +157,7 @@ jobs:
             The pacakge is available at: https://test.pypi.org/project/${{ needs.test.outputs.package_name }}/
 
       - name: build failure notification via email
-        if: ${{ steps.check.outputs.status == 'failure' }}
+        if: ${{ steps.check.outputs.status == 'failure' && env.RUN_NOTIFICATION_JOB == 'true'}}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.BUILD_NOTIFY_MAIL_SERVER }}
