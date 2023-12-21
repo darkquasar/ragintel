@@ -93,6 +93,8 @@ jobs:
 
       - name: build documentation
         run: |
+          ls -lah
+          ls $GITHUB_WORKSPACE
           poetry install -E doc
           mkdocs build
           git config --global user.name Docs deploy
