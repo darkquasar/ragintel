@@ -1,0 +1,7 @@
+name: ragintel
+channels:
+  - conda-forge
+dependencies:
+  - poetry>=1.7.1
+  - python=3.11.7
+  - tox-conda>=0.10.2

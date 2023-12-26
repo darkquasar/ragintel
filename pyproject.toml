@@ -16,11 +16,12 @@ classifiers=[
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.11'
 ]
+
 packages = [
-    { include = "ragintel" },
-    { include = "tests", format = "sdist" },
+    { include = "ragintel", from="src" },
+    { include = "tests", format = "sdist" }
 ]
 
 [tool.poetry.dependencies]
@@ -50,6 +51,11 @@ mypy = {version = "^1.7.1", optional = true}
 setuptools = {version="^69.0.2", optional = true}
 pkginfo = {version="^1.9.6", optional = true}
 virtualenv = {version="^20.25.0", optional = true}
+pdfplumber = "^0.10.3"
+docx = "^0.2.4"
+bs4 = "^0.0.1"
+poetry = "^1.7.1"
+types-beautifulsoup4 = "^4.12.0.7"
 
 [tool.poetry.extras]
 test = [
@@ -108,4 +114,5 @@ exclude = '''
 '''
 
 [tool.isort]
+src_paths = ["src"]
 profile = "black"
