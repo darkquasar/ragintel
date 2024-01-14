@@ -34,7 +34,8 @@ bs4 = "^0.0.1"
 types-beautifulsoup4 = "^4.12.0.7"
 playwright = "^1.40.0"
 html2text = "^2020.1.16"
-types-requests = "^2.31.0.20240106"
+
+# [tool.poetry.extras]
 
 [tool.poetry.scripts]
 ragintel = 'ragintel.cli:main'
@@ -67,15 +68,11 @@ setuptools = "^69.0.2"
 pkginfo = "^1.9.6"
 virtualenv = "^20.25.0"
 
-[tool.poetry.group.langchain]
+[tool.poetry.group.embedchain]
 optional = true
 
-[tool.poetry.group.langchain.dependencies]
-tiktoken = "^0.5.2"
-langchain-core = "^0.1.4"
-langchain = "^0.0.353"
-openai = "^1.6.1"
-opensearch-py = "^2.4.2"
+[tool.poetry.group.embedchain.dependencies]
+embedchain = "^0.1.54"
 
 [build-system]
 requires = ["poetry-core"]

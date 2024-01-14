@@ -29,6 +29,35 @@ Test
 
 * TODO
 
+## Contribute and Test
+
+### Generating Dev Environment
+
+git clone XXXXX
+mamba env create --file ragintel.yaml
+
+poetry install -E doc -E dev -E test
+Alternatively: poetry install --with dev
+
+git init
+git config init.defaultBranch main
+git config user.name "YourName"
+git config user.email "YourEmail@something.com"
+
+pre-commit install
+
+git remote add origin git@github.com:darkquasar/ragintel.git
+git add .
+pre-commit run --all-files
+git add .
+git commit -m "Initial contribution commit"
+git branch -M main
+git push -u origin main
+
+### Installing for Embedchain JupyterNotebooks
+
+
+
 ## Credits
 
-This package was created with the [ppw](https://zillionare.github.io/python-project-wizard) tool. For more information, please visit the [project page](https://zillionare.github.io/python-project-wizard/).
+This package was created with the [Python Project Wizard](https://zillionare.github.io/python-project-wizard/) Cookiecutter template.
