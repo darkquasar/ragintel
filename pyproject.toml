@@ -35,6 +35,9 @@ types-beautifulsoup4 = "^4.12.0.7"
 playwright = "^1.40.0"
 html2text = "^2020.1.16"
 types-requests = "^2.31.0.20240106"
+pyyaml = "^6.0.1"
+python-box = "^7.1.1"
+loguru = "^0.7.2"
 
 [tool.poetry.scripts]
 ragintel = 'ragintel.cli:main'
@@ -76,6 +79,7 @@ langchain-core = "^0.1.4"
 langchain = "^0.0.353"
 openai = "^1.6.1"
 opensearch-py = "^2.4.2"
+langchain-openai = "^0.0.3"
 
 [build-system]
 requires = ["poetry-core"]

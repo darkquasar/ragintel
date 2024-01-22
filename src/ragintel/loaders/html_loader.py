@@ -1,54 +1,71 @@
-from typing import Optional, Type
-
-import html2text
-
-from ..loaders.base import Loader
+from langchain.docstore.document import Document
+from loguru import logger
 
 
 class HtmlLoader:
-    def __init__(self, loader: Type[Loader], url: list):
+    def __init__(self, loader_type: str, url: list | str = ...):
 
-        self.loader = loader
+        self.loader_type = loader_type
         self.url = url
-        self.raw_html_content = ""
+        self.documents = []
 
-    def load_clear_html(self) -> str:
+    def load_html(self) -> str:
         """
         Load HTML content from the specified URL and convert it to plain text.
         """
 
-        for url in self.url:
+        if type(self.url) == str:
+            self.url = [self.url]
 
-            if self.loader.loader_type == "simple_html":
+        if self.loader_type == "ragintel.simple_html":
 
-                try:
-                    import requests
-                except ImportError:
-                    print("Missing library")
+            try:
+                import requests
+            except ImportError:
+                logger.error("Missing requests library")
 
-                # Use requests to fetch the HTML content
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-                }
+            # Use requests to fetch the HTML content
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+            }
+
+            for url in self.url:
+
                 response = requests.get(url, headers=headers)
-                html_content = response.text
+                html_documents = Document(
+                    page_content=response.text,
+                    metadata={"source": "ragintel.simple_html"},
+                )
+                self.documents.append(html_documents)
 
-                # Use html2text to convert HTML to clean ASCII text
-                self.raw_html_content = html_content
+        elif self.loader_type == "langchain.async_html":
 
-            elif self.loader.loader_type == "langchain_async_html":
+            try:
+                from langchain.document_loaders import AsyncChromiumLoader
+            except ImportError:
+                logger.error("Missing langchain AsyncChromiumLoader library")
 
-                try:
-                    from langchain.document_loaders import AsyncChromiumLoader
-                except ImportError:
-                    print("cannot load library")
+            loader = AsyncChromiumLoader(self.url)
+            html_documents = loader.load()
+            self.documents = html_documents
 
-                # Logic still to be implemented
-                langc_loader = AsyncChromiumLoader([url])
-                html_content = langc_loader.load()
-                self.raw_html_content = html_content
+        elif self.loader_type == "langchain.web_based_loader":
 
-            yield self.raw_html_content
+            try:
+                from langchain.document_loaders import WebBaseLoader
+            except ImportError:
+                logger.error("Missing langchain WebBaseLoader library")
+
+            # Logic still to be implemented
+            loader = WebBaseLoader(self.url)
+            html_documents = loader.load()
+            self.documents = html_documents
+
+        else:
+            logger.error("Missing loader type")
+
+        logger.info(f"Loaded {len(self.documents)} HTML documents")
+        return self.documents
 
     def load_html_with_filter(self, html_tag_filters: list) -> str:
         """

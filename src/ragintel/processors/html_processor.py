@@ -1,41 +1,50 @@
-from typing import Optional, Type
+from typing import List
 
 import html2text
 from langchain.docstore.document import Document
+from loguru import logger
 
 
 class ConvertHTMLToText:
-    def __init__(self, doc: Document, parser: str = "html2text"):
+    def __init__(self, docs: List[Document], parser: str = "langchain.html_parser"):
 
         self.parser = parser
-        self.doc = doc
+        self.docs = docs
+        self.clean_html_docs = []
 
-    def convert_html_to_text(self, raw_html: str):
+    def convert_html_to_text(self) -> List[Document]:
 
         """
         Convert HTML content to plain text using html2text either directly or via langchain
         """
 
-        self.clean_html_text = ""
+        if self.parser == "ragintel.html2text":
 
-        if self.parser == "html2text":
+            logger.info("Converting HTML to plain text using ragintel.html2text")
+            for doc in self.docs:
+                raw_html = doc.page_content
+                clean_html_text = html2text.html2text(raw_html)
+                html_document = Document(
+                    page_content=clean_html_text,
+                    metadata={"source": "ragintel.html2text"},
+                )
+                self.clean_html_docs.append(html_document)
 
-            clean_html_text = html2text.html2text(raw_html)
-            self.clean_html_text = clean_html_text
+        if self.parser == "langchain.html_parser":
 
-        if self.parser == "langchain_html_parser":
+            logger.info("Converting HTML to plain text using langchain.html_parser")
 
             try:
                 from langchain.document_transformers import Html2TextTransformer
             except ImportError:
-                print("cannot load library")
-
-            if self.doc is None:
-                # Construct Document instance to ensure parsing
-                doc = Document(page_content=raw_html, metadata={"source": "local"})
+                logger.error("Missing langchain's Html2TextTransformer library")
 
             # Transform
             _html2text = Html2TextTransformer()
-            docs_transformed = _html2text.transform_documents([doc])
+            docs_transformed = _html2text.transform_documents(self.docs)
 
-            self.clean_html_text = docs_transformed
+            self.clean_html_docs = docs_transformed
+
+        logger.info(
+            f"Converted {len(self.clean_html_docs)} HTML documents to plain text"
+        )
