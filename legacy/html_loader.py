@@ -1,11 +1,9 @@
-
 from langchain.docstore.document import Document
 from loguru import logger
 
 
 class HtmlLoader:
     def __init__(self, loader_type: str):
-
         self.loader_type = loader_type
         self.documents = []
 
@@ -19,7 +17,6 @@ class HtmlLoader:
             self.url = [self.url]
 
         if self.loader_type == "ragintel.simple_html":
-
             try:
                 import requests
             except ImportError:
@@ -31,7 +28,6 @@ class HtmlLoader:
             }
 
             for url in self.url:
-
                 response = requests.get(url, headers=headers)
                 html_documents = Document(
                     page_content=response.text,
@@ -40,7 +36,6 @@ class HtmlLoader:
                 self.documents.append(html_documents)
 
         elif self.loader_type == "langchain.async_html":
-
             try:
                 from langchain.document_loaders import AsyncChromiumLoader
             except ImportError:
@@ -51,7 +46,6 @@ class HtmlLoader:
             self.documents = html_documents
 
         elif self.loader_type == "langchain.web_based_loader":
-
             try:
                 from langchain.document_loaders import WebBaseLoader
             except ImportError:

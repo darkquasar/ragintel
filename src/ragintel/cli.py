@@ -1,4 +1,5 @@
 """Console script for ragintel."""
+
 import fire
 from loguru import logger
 

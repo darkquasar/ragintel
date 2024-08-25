@@ -1,4 +1,3 @@
-
 """
 AGENT: OpenAI CAPEC Agent
 SUMMARY: >
@@ -100,12 +99,7 @@ class OpenAICapecAgent:
         """
         return "\n\n".join([d.page_content for d in docs])
 
-    def interact(
-        self,
-        query: str,
-        template_type: str = "simple_text",
-        template: str = None
-    ) -> str:
+    def interact(self, query: str, template_type: str = "simple_text", template: str = None) -> str:
         """
         Interact with the language model and generate a plain text response.
 

@@ -1,6 +1,7 @@
 """
 This is an adaptation of the OllamaEmbeddingFunction class from the ChromaDB API to work with a version of ChromaDB that is not compatible yet with the rest of the Ragintel Packages, specifically Crewai
 """
+
 from typing import cast
 
 import httpx
@@ -36,7 +37,9 @@ class OllamaEmbeddingFunction(EmbeddingFunction[Documents]):
             Embeddings: The embeddings for the texts.
 
         Example:
-            >>> ollama_ef = OllamaEmbeddingFunction(url="http://localhost:11434/api/embed", model_name="nomic-embed-text")
+            >>> ollama_ef = OllamaEmbeddingFunction(
+            ...     url="http://localhost:11434/api/embed", model_name="nomic-embed-text"
+            ... )
             >>> texts = ["Hello, world!", "How are you?"]
             >>> embeddings = ollama_ef(texts)
         """
@@ -51,7 +54,5 @@ class OllamaEmbeddingFunction(EmbeddingFunction[Documents]):
 
         return cast(
             Embeddings,
-            [
-                item["embeddings"][0] for item in embeddings if "embeddings" in item
-            ],
+            [item["embeddings"][0] for item in embeddings if "embeddings" in item],
         )

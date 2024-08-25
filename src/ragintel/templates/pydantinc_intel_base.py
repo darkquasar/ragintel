@@ -1,10 +1,8 @@
-
 from loguru import logger
 from pydantic import BaseModel, Field
 
 
 class RagIntelMITRE(BaseModel):
-
     """RAG Intel MITRE model"""
 
     article_name: str = Field(description="Full title of the article")

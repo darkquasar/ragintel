@@ -12,13 +12,11 @@ from loguru import logger
 
 class FileLoader:
     def __init__(self, loader_type: str | None = None):
-
         self.loader_type = loader_type
         self.documents = []
         logger.debug("Initialized FileLoader loader")
 
     def load_single_document(self, file_name: str) -> list[Document]:
-
         try:
             loader = UnstructuredFileLoader(file_name)
             self.documents = loader.load()
@@ -29,7 +27,6 @@ class FileLoader:
         return self.documents
 
     def load_directory(self, directory: str, glob: str) -> list[Document]:
-
         try:
             loader = DirectoryLoader(directory, glob)
             self.documents = loader.load()
@@ -39,9 +36,7 @@ class FileLoader:
 
         return self.documents
 
-
     def load_obsidian_vault(self, directory: str) -> list[Document]:
-
         try:
             loader = ObsidianLoader(directory)
             self.documents = loader.load()
@@ -51,7 +46,9 @@ class FileLoader:
 
         return self.documents
 
-    def list_directory_recursive(self, directory: str, glob_pattern: str, exclude_patterns: list[str] = None) -> list[str]:
+    def list_directory_recursive(
+        self, directory: str, glob_pattern: str, exclude_patterns: list[str] | None = None
+    ) -> list[str]:
         """Recursively lists all files matching a glob pattern within a directory.
 
         :param directory: str, the root directory to search for files.
@@ -75,10 +72,16 @@ class FileLoader:
 
         for root, dirs, files in os.walk(directory):
             # Exclude directories based on patterns
-            dirs[:] = [d for d in dirs if not any(glob.fnmatch.fnmatch(d, pattern) for pattern in exclude_patterns)]
+            dirs[:] = [
+                d
+                for d in dirs
+                if not any(glob.fnmatch.fnmatch(d, pattern) for pattern in exclude_patterns)
+            ]
 
             for file in files:
-                if glob.fnmatch.fnmatch(file, glob_pattern) and not any(glob.fnmatch.fnmatch(file, pattern) for pattern in exclude_patterns):
+                if glob.fnmatch.fnmatch(file, glob_pattern) and not any(
+                    glob.fnmatch.fnmatch(file, pattern) for pattern in exclude_patterns
+                ):
                     full_path = os.path.join(root, file)
                     all_files.append(full_path)
 

@@ -13,9 +13,6 @@ classifiers=[
     'Intended Audience :: Developers',
     'License :: OSI Approved :: BSD License',
     'Natural Language :: English',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
@@ -165,6 +162,8 @@ extend-ignore = [
   "PT004",  # Use underscore for non-returning fixture (use usefixture instead)
   "PTH123", # use pathlib instead of builtin open
   "PLC1901", # simply not always correct
+  "ARG002", # unused arguments
+  "ISC001", # implicit string concatenation
 ]
 unfixable = [
   "T20",  # Removes print statements
@@ -186,17 +185,20 @@ required-imports = ["from loguru import logger"]
 "bench/**" = ["T20"]
 "_custom_build/backend.py" = ["T20"]
 "setup.py" = ["T20"]
-".eggs" = ["ALL"]
-".git" = ["ALL"]
-".hg" = ["ALL"]
-".mypy_cache" = ["ALL"]
-".tox" = ["ALL"]
-".venv" = ["ALL"]
-"_build" = ["ALL"]
-"buck-out" = ["ALL"]
-"build" = ["ALL"]
-"dist" = ["ALL"]
-".history" = ["ALL"]
+"**/**.eggs" = ["ALL"]
+".git/**" = ["ALL"]
+".hg/**" = ["ALL"]
+".mypy_cache/**" = ["ALL"]
+".tox/**" = ["ALL"]
+".venv/**" = ["ALL"]
+"_build/**" = ["ALL"]
+"buck-out/**" = ["ALL"]
+"build/**" = ["ALL"]
+"dist/**" = ["ALL"]
+".history/**" = ["ALL"]
+"legacy/**" = ["ALL"]
+"mitre_tram.py" = ["ALL"] # temporarily ignore since it may be deprecated
+"cli.py" = ["ALL"] # temporarily ignore since it may be deprecated
 
 [tool.ruff.format]
 quote-style = "double"

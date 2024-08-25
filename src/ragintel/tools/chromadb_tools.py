@@ -25,8 +25,14 @@ class ChromaEmbeddingsAdapter(Embeddings):
     def embed_query(self, query):
         return self.ef([query])[0]
 
+
 class ChromaOps:
-    def __init__(self, collection_name: str, embedder: EmbedderType = EmbedderType.CHROMA, db_path: Path = Path("./data/chromadb")):
+    def __init__(
+        self,
+        collection_name: str,
+        embedder: EmbedderType = EmbedderType.CHROMA,
+        db_path: Path = Path("./data/chromadb"),
+    ):
         logger.info("Initializing ChromaDB")
         # setup Chroma in-memory, for easy prototyping. Can add persistence easily!
         self.client = chromadb.PersistentClient(path=str(db_path))
@@ -38,21 +44,33 @@ class ChromaOps:
             self.ef = embedding_functions.DefaultEmbeddingFunction()
             logger.info("Using Chroma as the embedding function")
         elif embedder == EmbedderType.OPENAI:
-            self.ef = embedding_functions.OpenAIEmbeddingFunction(model=os.getenv("OPENAI_EMBEDDINGS_MODEL"), api_key=os.getenv("OPENAI_API_KEY"), )
+            self.ef = embedding_functions.OpenAIEmbeddingFunction(
+                model=os.getenv("OPENAI_EMBEDDINGS_MODEL"),
+                api_key=os.getenv("OPENAI_API_KEY"),
+            )
             logger.info("Using OpenAI as the embedding function")
         elif embedder == EmbedderType.GEMINI:
-            self.ef = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=os.getenv("GOOGLE_API_KEY"), model_name=os.getenv("GOOGLE_EMBEDDINGS_MODEL"))
+            self.ef = embedding_functions.GoogleGenerativeAiEmbeddingFunction(
+                api_key=os.getenv("GOOGLE_API_KEY"), model_name=os.getenv("GOOGLE_EMBEDDINGS_MODEL")
+            )
             logger.info("Using Google Generative AI as the embedding function")
         elif embedder == EmbedderType.OLLAMA:
-            self.ef = OllamaEmbeddingFunction(model_name=os.getenv("OLLAMA_EMBEDDINGS_MODEL"), url=os.getenv("OLLAMA_SERVER_EMBEDDINGS_API_URL"))
+            self.ef = OllamaEmbeddingFunction(
+                model_name=os.getenv("OLLAMA_EMBEDDINGS_MODEL"),
+                url=os.getenv("OLLAMA_SERVER_EMBEDDINGS_API_URL"),
+            )
             logger.info("Using Ollama as the embedding function")
 
-        self.collection = self.client.get_or_create_collection(collection_name,
-                                                               embedding_function=self.ef)
+        self.collection = self.client.get_or_create_collection(
+            collection_name, embedding_function=self.ef
+        )
 
-
-    def embed_documents(self, docs: list[Document], extra_metadata_fields: list[dict] = []):
+    def embed_documents(
+        self, docs: list[Document], extra_metadata_fields: list[dict] | None = None
+    ):
         # Split the text into sentences
+        if extra_metadata_fields is None:
+            extra_metadata_fields = []
         logger.info("Splitting text into chunks prior to embedding...")
         text_splitter = TextSplitter()
         tokenized_docs = text_splitter.split_text_recursive_char(docs)
@@ -61,17 +79,17 @@ class ChromaOps:
         logger.info(f"Embedding {len(docs)} documents in ChromaDB...")
         # We need to consider quotas and rate limiting for the embedding services
         if self.embedder == EmbedderType.GEMINI:
-
             # Split the documents into sublists based on the quota
             logger.debug("Splitting documents into sublists based on the quota...")
             sublists = self.split_docs_by_quota(docs=tokenized_docs, quota_per_minute=100)
 
             for doc_sublist in sublists:
-
                 self.collection.add(
-                    documents=[doc.page_content for doc in doc_sublist], # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
-                    metadatas=[doc.metadata for doc in doc_sublist], # filter on these!
-                    ids=[str(uuid.uuid4()) for doc in doc_sublist], # unique for each doc
+                    documents=[
+                        doc.page_content for doc in doc_sublist
+                    ],  # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
+                    metadatas=[doc.metadata for doc in doc_sublist],  # filter on these!
+                    ids=[str(uuid.uuid4()) for doc in doc_sublist],  # unique for each doc
                 )
 
                 logger.info(f"Added {len(doc_sublist)} documents to the collection")
@@ -79,17 +97,17 @@ class ChromaOps:
                 time.sleep(60)  # Sleep for a minute to avoid rate limiting
 
         if self.embedder == EmbedderType.OLLAMA:
-
             # Split the documents into sublists based on the quota
             logger.debug("Splitting documents into sublists based on the quota...")
             sublists = self.split_docs_by_quota(docs=tokenized_docs, quota_per_minute=100)
 
             for doc_sublist in sublists:
-
                 self.collection.add(
-                    documents=[doc.page_content for doc in doc_sublist], # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
-                    metadatas=[doc.metadata for doc in doc_sublist], # filter on these!
-                    ids=[str(uuid.uuid4()) for doc in doc_sublist], # unique for each doc
+                    documents=[
+                        doc.page_content for doc in doc_sublist
+                    ],  # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
+                    metadatas=[doc.metadata for doc in doc_sublist],  # filter on these!
+                    ids=[str(uuid.uuid4()) for doc in doc_sublist],  # unique for each doc
                 )
 
                 logger.info(f"Added {len(doc_sublist)} documents to the collection")
@@ -99,11 +117,11 @@ class ChromaOps:
         if isinstance(query, str):  # Check if it's a single string
             query = [query]  # Convert to a list for consistent handling
 
-        return self.collection.query(
-            query_texts=query,
-            n_results=n_results)
+        return self.collection.query(query_texts=query, n_results=n_results)
 
-    def split_docs_by_quota(self, docs: list[Document], quota_per_minute: int = 100) -> list[list[Document]]:
+    def split_docs_by_quota(
+        self, docs: list[Document], quota_per_minute: int = 100
+    ) -> list[list[Document]]:
         """
         Splits a list of document contents into sublists based on a quota.
 

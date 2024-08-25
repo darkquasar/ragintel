@@ -17,7 +17,6 @@ from ragintel.utils.file_loader import FileLoader
 
 class SigmaLoader:
     def __init__(self):
-
         # Create an empty on-disk database and connect to it
         db = kuzu.Database("./data/ragintel.db")
         self.conn = kuzu.Connection(db)
@@ -48,13 +47,30 @@ class SigmaLoader:
 
         logger.info("Deleting unnecessary directories from Sigma repository")
         dm = DirectoryManager()
-        dm.delete_directory(["data/sigma/tests/", "data/sigma/unsupported/", "data/sigma/.github/", "data/sigma/deprecated/", "data/sigma/other/", "data/sigma/documentation/", "data/sigma/images/"])
+        dm.delete_directory(
+            [
+                "data/sigma/tests/",
+                "data/sigma/unsupported/",
+                "data/sigma/.github/",
+                "data/sigma/deprecated/",
+                "data/sigma/other/",
+                "data/sigma/documentation/",
+                "data/sigma/images/",
+            ]
+        )
 
         FileLoad = FileLoader()
         exclude_files = [".github", "deprecated", "other", "unsupported", "tests", "test"]
-        self.sigma_file_list = FileLoad.list_directory_recursive(str(self.sigma_dest_directory), "*.yml", exclude_patterns=exclude_files)
+        self.sigma_file_list = FileLoad.list_directory_recursive(
+            str(self.sigma_dest_directory), "*.yml", exclude_patterns=exclude_files
+        )
 
-    def load_sigma_rules(self, file_paths: list[str] = [], load_to_chroma: bool = False, chroma_embedder: str = "chroma") -> None:
+    def load_sigma_rules(
+        self,
+        file_paths: list[str] | None = None,
+        load_to_chroma: bool = False,
+        chroma_embedder: str = "chroma",
+    ) -> None:
         """
         Loads Sigma rules into Kuzu Graph Database.
 
@@ -67,13 +83,19 @@ class SigmaLoader:
         - None
         """
 
+        if file_paths is None:
+            file_paths = []
         self.clone_sigma_repo()
 
         if self.sigma_file_list != []:
-            logger.info(f"Found {len(self.sigma_file_list)} Sigma rules files based on recent repo cloning.")
+            logger.info(
+                f"Found {len(self.sigma_file_list)} Sigma rules files based on recent repo cloning."
+            )
             file_paths = self.sigma_file_list
         else:
-            logger.warning("No defined list of sigma rules files based on recent repo cloning. Resorting to user provided list of sigma rules files.")
+            logger.warning(
+                "No defined list of sigma rules files based on recent repo cloning. Resorting to user provided list of sigma rules files."
+            )
             if file_paths == []:
                 logger.error("No list of sigma rules files provided. Exiting.")
                 return
@@ -99,7 +121,6 @@ class SigmaLoader:
         """)
 
         for file_path in file_paths:
-
             try:
                 with open(file_path) as f:
                     sigma_rule_data = yaml.safe_load(f)
@@ -108,8 +129,8 @@ class SigmaLoader:
 
                 # Process the 'detection' field dynamically, storing results in a list of strings
                 detection_data = []
-                for selection_key, selection_value in sigma_rule_data['detection'].items():
-                    if selection_key.startswith('selection_'):
+                for selection_key, selection_value in sigma_rule_data["detection"].items():
+                    if selection_key.startswith("selection_"):
                         if isinstance(selection_value, list):
                             # Handle the case where selection_value is a list
                             for item in selection_value:
@@ -117,9 +138,13 @@ class SigmaLoader:
                                     # If item is a dictionary, process it as before
                                     for field, value in item.items():
                                         if isinstance(value, list):
-                                            detection_data.append(f"{selection_key}_{field}: {', '.join(value)}")
+                                            detection_data.append(
+                                                f"{selection_key}_{field}: {', '.join(value)}"
+                                            )
                                         else:
-                                            detection_data.append(f"{selection_key}_{field}: {value}")
+                                            detection_data.append(
+                                                f"{selection_key}_{field}: {value}"
+                                            )
                                 else:
                                     # If item is not a dictionary, handle it appropriately (e.g., append as is)
                                     detection_data.append(f"{selection_key}: {item}")
@@ -127,19 +152,23 @@ class SigmaLoader:
                             # Handle the case where selection_value is a dictionary (as before)
                             for field, value in selection_value.items():
                                 if isinstance(value, list):
-                                    detection_data.append(f"{selection_key}_{field}: {', '.join(value)}")
+                                    detection_data.append(
+                                        f"{selection_key}_{field}: {', '.join(value)}"
+                                    )
                                 else:
                                     detection_data.append(f"{selection_key}_{field}: {value}")
                     else:
                         detection_data.append(f"{selection_key}: {selection_value}")
 
                 # Process the 'logsource' attribute
-                logsource_data = [f"{key}: {value}" for key, value in sigma_rule_data['logsource'].items()]
+                logsource_data = [
+                    f"{key}: {value}" for key, value in sigma_rule_data["logsource"].items()
+                ]
 
                 # Update the sigma_rule_data with the processed logsource data
-                sigma_rule_data['logsource'] = logsource_data
+                sigma_rule_data["logsource"] = logsource_data
                 # Update the sigma_rule_data with the processed detection data
-                sigma_rule_data['detection'] = detection_data
+                sigma_rule_data["detection"] = detection_data
 
                 self.conn.execute(f"""
                     CREATE (s:SigmaRule {{
@@ -163,13 +192,21 @@ class SigmaLoader:
                 continue
 
         if load_to_chroma:
-
             try:
-                self.load_sigma_to_chromadb(embedder=chroma_embedder, sigma_folder_path=self.sigma_dest_directory)
+                self.load_sigma_to_chromadb(
+                    embedder=chroma_embedder, sigma_folder_path=self.sigma_dest_directory
+                )
             except Exception as e:
-                logger.error(f"Error loading Sigma rules to ChromaDB: {e}. Continuing to next rule.")
+                logger.error(
+                    f"Error loading Sigma rules to ChromaDB: {e}. Continuing to next rule."
+                )
 
-    def load_sigma_to_chromadb(self, embedder: str = "chroma", sigma_folder_path: str = "data/sigma", rule_quantity: int = 300) -> None:
+    def load_sigma_to_chromadb(
+        self,
+        embedder: str = "chroma",
+        sigma_folder_path: str = "data/sigma",
+        rule_quantity: int = 300,
+    ) -> None:
         """
         Loads Sigma rules into ChromaDB.
 
@@ -186,21 +223,38 @@ class SigmaLoader:
 
         # Let's use Langchain's DirectoryLoader to load Sigma rules into Document Objects
         logger.info("Loading Sigma rules Document Objects")
-        loader = DirectoryLoader(sigma_folder_path, glob="**/*.yml", use_multithreading=False, recursive=True, show_progress=True, sample_size=rule_quantity, exclude=["**/.github/**", "**/deprecated/**", "*deprecated*", "**/other/**", "*test*", "**/unsupported/**"])
+        loader = DirectoryLoader(
+            sigma_folder_path,
+            glob="**/*.yml",
+            use_multithreading=False,
+            recursive=True,
+            show_progress=True,
+            sample_size=rule_quantity,
+            exclude=[
+                "**/.github/**",
+                "**/deprecated/**",
+                "*deprecated*",
+                "**/other/**",
+                "*test*",
+                "**/unsupported/**",
+            ],
+        )
         docs = loader.load()
         logger.info("Finished loading Sigma rules Document Objects")
 
         for doc in docs:
-            file_path = Path(doc.metadata['source'])
+            file_path = Path(doc.metadata["source"])
             try:
                 # Let's append necessary metadata for each document
                 # Chromadb "medatadas" field is a dictionary that doesn't accept nested lists, so we need to convert the list of tags to a string of comma separated values
                 with open(file_path) as f:
                     sigma_rule_data = yaml.safe_load(f)
-                    logger.debug(f"Fixing Metadata for Document: {sigma_rule_data.get('title', 'NA')}")
-                    doc.metadata['id'] = sigma_rule_data.get('id', str(uuid.uuid4()))
-                    doc.metadata['title'] = sigma_rule_data.get('title', 'NA')
-                    doc.metadata['tags'] = ', '.join(sigma_rule_data.get('tags', ['NA']))
+                    logger.debug(
+                        f"Fixing Metadata for Document: {sigma_rule_data.get('title', 'NA')}"
+                    )
+                    doc.metadata["id"] = sigma_rule_data.get("id", str(uuid.uuid4()))
+                    doc.metadata["title"] = sigma_rule_data.get("title", "NA")
+                    doc.metadata["tags"] = ", ".join(sigma_rule_data.get("tags", ["NA"]))
 
             except Exception as e:
                 logger.error(f"Error editing Document: {e}. Continuing to next rule.")
@@ -224,7 +278,5 @@ class SigmaLoader:
         - None
         """
 
-        query = query.lower()
-        results = self.conn.execute(cypher_query)
-
-        return results
+        cypher_query = cypher_query.lower()
+        return self.conn.execute(cypher_query)

@@ -41,7 +41,7 @@ git clone XXXXX
 
 #### Install Mamba or Anaconda
 
-TBD
+Go to the Miniforge repo, download [one of the installers](https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge3) and you are good to go!
 
 #### Create Mamba Environment
 

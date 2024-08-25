@@ -6,7 +6,7 @@ from loguru import logger
 class ConfigLoader:
     """Loads YAML configuration files."""
 
-    def __init__(self, config_file: str = None):
+    def __init__(self, config_file: str | None = None):
         self.config_file = config_file
 
     def load_config(self, config_file: str) -> Box:
@@ -34,6 +34,8 @@ class ConfigLoader:
                 return self.config
 
         except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found: {config_file}")
+            msg = f"Configuration file not found: {config_file}"
+            raise FileNotFoundError(msg)
         except yaml.YAMLError as exc:
-            raise ValueError(f"Invalid YAML configuration: {exc}")
+            msg = f"Invalid YAML configuration: {exc}"
+            raise ValueError(msg)

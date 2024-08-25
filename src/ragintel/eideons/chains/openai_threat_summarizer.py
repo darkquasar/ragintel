@@ -1,4 +1,3 @@
-
 """
 AGENT: OpenAI Threat Summarizer
 SUMMARY: >
@@ -35,7 +34,6 @@ EXAMPLE: |
     print(structured_response)
 """
 
-# Import statements
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -52,8 +50,8 @@ from ragintel.utils import config_loader
 class OpenAIInteractor:
     def __init__(
         self,
-        api_key: str = None,
-        config_file: str = None,
+        api_key: str | None = None,
+        config_file: str | None = None,
         rag_db: opensearchdb_tools.OpenSearchDB = None,
     ):
         """
@@ -76,7 +74,6 @@ class OpenAIInteractor:
                 self.OPENAI_API_KEY = api_key
             except ValueError:
                 logger.error("Missing API key")
-                raise ValueError("Missing API key")
 
         # Set configuration values
         self.OPENAI_API_KEY = config.llm.config.api_key
@@ -101,10 +98,7 @@ class OpenAIInteractor:
         return "\n\n".join([d.page_content for d in docs])
 
     def interact(
-        self,
-        query: str,
-        template_type: str = "simple_text",
-        template: str = None
+        self, query: str, template_type: str = "simple_text", template: str | None = None
     ) -> str:
         """
         Interact with the language model and generate a plain text response.
@@ -150,7 +144,6 @@ class OpenAIInteractor:
                 """
         else:
             logger.info("Using custom template")
-            template = template
 
         prompt = ChatPromptTemplate.from_template(template)
         logger.info("Loaded Prompte Template")
@@ -175,15 +168,13 @@ class OpenAIInteractor:
             | StrOutputParser()
         )
 
-        answer = chain.invoke(query)
-
-        return answer
+        return chain.invoke(query)
 
     def interact_structured(
         self,
         query: str,
         pydantic_template: BaseModel = None,
-        prompt_template: str = None,
+        prompt_template: str | None = None,
     ) -> str:
         """
         Interact with the language model and generate a structured JSON response.
@@ -251,6 +242,4 @@ class OpenAIInteractor:
         )
 
         # Invoke Chain
-        result = chain.invoke(query)
-
-        return result
+        return chain.invoke(query)
