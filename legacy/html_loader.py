@@ -1,18 +1,19 @@
+
 from langchain.docstore.document import Document
 from loguru import logger
 
 
 class HtmlLoader:
-    def __init__(self, loader_type: str, url: list | str = ...):
+    def __init__(self, loader_type: str):
 
         self.loader_type = loader_type
-        self.url = url
         self.documents = []
 
-    def load_html(self) -> str:
+    def load_html(self, url: list | str = ...) -> list[Document]:
         """
         Load HTML content from the specified URL and convert it to plain text.
         """
+        self.url = url
 
         if type(self.url) == str:
             self.url = [self.url]

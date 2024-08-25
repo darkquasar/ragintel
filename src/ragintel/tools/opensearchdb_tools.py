@@ -1,21 +1,20 @@
 import random
 import string
-from typing import List
 
 import yaml
 from box import Box
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import OpenSearchVectorSearch
+from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 from opensearchpy import OpenSearch
 
-from ragintel.loaders import config_loader
+from ragintel.utils import config_loader
 
 
 class OpenSearchDB:
     def __init__(
         self,
-        url: List[str] = None,
+        url: list[str] = None,
         config_file: str = None,
         username: str = "admin",
         password: str = "admin",
@@ -166,7 +165,7 @@ class OpensearchLanchainClient:
         self,
         index: str = None,
         config_dict: dict = None,
-        url: List[str] = None,
+        url: list[str] = None,
         config_file: str = None,
         username: str = "admin",
         password: str = "admin",
@@ -201,10 +200,10 @@ class OpensearchLanchainClient:
             index_name=index,
             embedding_function=self.embeddings,
             http_compress=True,  # enables gzip compression for request bodies
-            verify_certs=False,
+            verify_certs=False
         )
 
-    def add_documents(self, index: str, documents: List[dict]):
+    def add_documents(self, index: str, documents: list[dict]):
 
         self.vector_store = OpenSearchVectorSearch(
             opensearch_url=self.OPENSEARCH_URL,
@@ -212,10 +211,10 @@ class OpensearchLanchainClient:
             index_name=index,
             embedding_function=self.embeddings,
             http_compress=True,  # enables gzip compression for request bodies
-            verify_certs=False,
+            verify_certs=False
         )
 
-        self.vector_store.add_documents(documents)
+        self.vector_store.add_documents(documents, bulk_size=1500)
 
     def show_vector_store(self):
         print(vars(self.vector_store))

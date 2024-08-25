@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Tests for `ragintel` package."""
 # pylint: disable=redefined-outer-name
-
 import pytest
+from loguru import logger
 
 
 @pytest.fixture

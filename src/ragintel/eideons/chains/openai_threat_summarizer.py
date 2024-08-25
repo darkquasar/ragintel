@@ -1,15 +1,52 @@
-# from langchain.chat_models import ChatOpenAI
+
+"""
+AGENT: OpenAI Threat Summarizer
+SUMMARY: >
+  This interactor will summarize a threat report and provide MITRE ATTCK Tags
+  based on OpenAI best guess. The OpenAIInteractor class provides an interface
+  for interacting with the OpenAI language model. It allows users to generate
+  responses to queries using the RAG (Retrieval-Augmented Generation) approach.
+  It provides methods for interacting with the language model, both for plain
+  text responses and structured JSON responses.
+OUTPUT SCHEMA:
+  RAG_Intel_MITRE_Summary:
+    properties:
+      article_name:
+        type: str
+        description: Full title of the article
+      mitre_ttps:
+        type: list
+        items:
+          type: str
+        description: >
+          MITRE ATT&CK subtechniques that best apply to the article
+      short_description:
+        type: str
+        description: >
+          Summary of the article that captures the main issue and provides
+          context around main techniques used by the threat actor
+
+EXAMPLE: |
+    interactor = OpenAIInteractor(api_key="YOUR_API_KEY", config_file="config.yaml")
+    response = interactor.interact("What is the capital of France?")
+    print(response)
+
+    structured_response = interactor.interact_structured("What is the capital of France?")
+    print(structured_response)
+"""
+
+# Import statements
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 from loguru import logger
 from pydantic import BaseModel
 
-from ragintel.databases import opensearchdb
-from ragintel.loaders import config_loader
 from ragintel.templates import pydantinc_intel_base
+from ragintel.tools import opensearchdb_tools
+from ragintel.utils import config_loader
 
 
 class OpenAIInteractor:
@@ -17,13 +54,23 @@ class OpenAIInteractor:
         self,
         api_key: str = None,
         config_file: str = None,
-        rag_db: opensearchdb.OpenSearchDB = None,
+        rag_db: opensearchdb_tools.OpenSearchDB = None,
     ):
+        """
+        Initialize the OpenAIInteractor.
 
+        Args:
+            api_key (str): The API key for the OpenAI language model.
+            config_file (str): The path to the configuration file.
+            rag_db (opensearchdb.OpenSearchDB): An instance of OpenSearchDB for retrieving documents.
+
+        Raises:
+            ValueError: If the API key is missing.
+        """
+        # Load configuration from file if provided
         if config_file is not None:
             _config_loader = config_loader.ConfigLoader()
             config = _config_loader.load_config(config_file)
-
         else:
             try:
                 self.OPENAI_API_KEY = api_key
@@ -31,6 +78,7 @@ class OpenAIInteractor:
                 logger.error("Missing API key")
                 raise ValueError("Missing API key")
 
+        # Set configuration values
         self.OPENAI_API_KEY = config.llm.config.api_key
         self.llm_model = config.llm.config.model
         self.llm_temperature = config.llm.config.temperature
@@ -41,19 +89,36 @@ class OpenAIInteractor:
         self.retriever = self.rag_db.vector_store.as_retriever()
 
     def format_docs(self, docs):
+        """
+        Format the retrieved documents.
+
+        Args:
+            docs: The retrieved documents.
+
+        Returns:
+            str: The formatted documents.
+        """
         return "\n\n".join([d.page_content for d in docs])
 
     def interact(
         self,
         query: str,
         template_type: str = "simple_text",
-        template: str = None,
-        output_parser: str = None,
+        template: str = None
     ) -> str:
+        """
+        Interact with the language model and generate a plain text response.
 
+        Args:
+            query (str): The query to generate a response for.
+            template_type (str): The type of template to use for the response.
+            template (str): The custom template to use for the response.
+
+        Returns:
+            str: The generated response.
+        """
         # RAG prompt
         if template is None:
-
             if template_type == "simple_text":
                 logger.info(
                     "Using default template: simple_text. Answers will be provided as plain text."
@@ -68,12 +133,10 @@ class OpenAIInteractor:
 
                 Helpful answer:
                 """
-
             elif template_type == "prompt_json":
                 logger.info(
                     "Using default template: prompt_json. Answers will be provided as JSON formatted text, to the best of the AI model's capabilities"
                 )
-
                 template = """
                 Use the following pieces of context to answer the query at the end.
                 If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -85,7 +148,6 @@ class OpenAIInteractor:
 
                 JSON formatted helpful answer:
                 """
-
         else:
             logger.info("Using custom template")
             template = template
@@ -106,7 +168,7 @@ class OpenAIInteractor:
         chain = (
             {
                 "context": self.retriever | self.format_docs,
-                "question": RunnablePassthrough(),
+                "query": RunnablePassthrough(),
             }
             | prompt
             | model
@@ -123,20 +185,28 @@ class OpenAIInteractor:
         pydantic_template: BaseModel = None,
         prompt_template: str = None,
     ) -> str:
+        """
+        Interact with the language model and generate a structured JSON response.
 
+        Args:
+            query (str): The query to generate a response for.
+            pydantic_template (BaseModel): The Pydantic template for parsing the response.
+            prompt_template (str): The custom prompt template to use for the response.
+
+        Returns:
+            str: The generated response.
+        """
         # 01. Build Pydantic Parser from Pydantic Class
         if pydantic_template is None:
             logger.info("Using default template: RagIntelMITRE")
             pyd_template = pydantinc_intel_base.RagIntelMITRE
             parser = PydanticOutputParser(pydantic_object=pyd_template)
-
         else:
             logger.info("Using custom template")
             parser = PydanticOutputParser(pydantic_object=pydantic_template)
 
         # 02. Build RAG Prompt from Template
         if prompt_template is None:
-
             logger.info("Using prompt template: default.")
             template = """
             Use the following pieces of context to answer the query at the end.
@@ -148,7 +218,6 @@ class OpenAIInteractor:
 
             These are the format intructions: {format_instructions}
             """
-
         else:
             logger.info("Using custom prompt template")
             template = prompt_template

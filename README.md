@@ -33,12 +33,31 @@ Test
 
 ### Generating Dev Environment
 
+#### Clone this Repo
+
+```powershell
 git clone XXXXX
-mamba env create --file ragintel.yaml
+```
 
-poetry install -E doc -E dev -E test
-Alternatively: poetry install --with dev
+#### Install Mamba or Anaconda
 
+TBD
+
+#### Create Mamba Environment
+
+```powershell
+mamba env create --file ragintel-mamba-env.yaml
+```
+
+#### Install required packages using Poetry
+
+```powershell
+poetry install --with dev
+```
+
+#### Configure Git Pre-Commit Checks
+
+```powershell
 git init
 git config init.defaultBranch main
 git config user.name "YourName"
@@ -53,6 +72,28 @@ git add .
 git commit -m "Initial contribution commit"
 git branch -M main
 git push -u origin main
+```
+
+### Destroying and Regenerating the Environment
+
+To achieve this, we will destroy the Mamba virtual environment, then recreate it and add install all Poetry packages again
+
+```powershell
+# Delete poetry.lock
+del poetry.lock
+
+# Deactivate your ragintel env
+mamba deactivate
+
+# Delete environment
+mamba env remove -n ragintel
+
+# Create ragintel Mamba env again
+mamba env create --file ragintel-mamba-env.yaml
+
+# Re-Install all packages using Poetry
+poetry install --with dev
+```
 
 ### Installing for Embedchain JupyterNotebooks
 

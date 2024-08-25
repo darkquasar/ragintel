@@ -14,7 +14,8 @@
   ],
 
   "ignore": [
-    "src/oldstuff"
+    "src/oldstuff",
+    "legacy"
   ],
 
   "reportMissingImports": true,
