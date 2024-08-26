@@ -33,7 +33,7 @@ class Processor:
             logger.info("Converting HTML to plain text using langchain.html_parser")
 
             try:
-                from langchain.document_transformers import Html2TextTransformer
+                from langchain_community.document_transformers import Html2TextTransformer
             except ImportError:
                 logger.error("Missing langchain's Html2TextTransformer library")
 
@@ -84,17 +84,20 @@ class Processor:
 
         elif self.loader_type == "langchain.async_html":
             try:
-                from langchain.document_loaders import AsyncChromiumLoader
+                from langchain_community.document_loaders import AsyncChromiumLoader
             except ImportError:
                 logger.error("Missing langchain AsyncChromiumLoader library")
 
-            loader = AsyncChromiumLoader(self.url)
-            html_documents = loader.load()
-            self.documents = html_documents
+            try:
+                loader = AsyncChromiumLoader(self.url)
+                html_documents = loader.load()
+                self.documents = html_documents
+            except Exception as e:
+                logger.error(f"Error loading HTML content with AsyncChromiumLoader: {e}")
 
         elif self.loader_type == "langchain.web_based_loader":
             try:
-                from langchain.document_loaders import WebBaseLoader
+                from langchain_community.document_loaders import WebBaseLoader
             except ImportError:
                 logger.error("Missing langchain WebBaseLoader library")
 
