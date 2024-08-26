@@ -1,5 +1,6 @@
 import glob
 import os
+from pathlib import Path
 
 from langchain.docstore.document import Document
 from langchain_community.document_loaders import (
@@ -82,7 +83,7 @@ class FileLoader:
                 if glob.fnmatch.fnmatch(file, glob_pattern) and not any(
                     glob.fnmatch.fnmatch(file, pattern) for pattern in exclude_patterns
                 ):
-                    full_path = os.path.join(root, file)
+                    full_path = Path(root / file)
                     all_files.append(full_path)
 
         return all_files

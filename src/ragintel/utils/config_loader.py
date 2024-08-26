@@ -35,7 +35,7 @@ class ConfigLoader:
 
         except FileNotFoundError:
             msg = f"Configuration file not found: {config_file}"
-            raise FileNotFoundError(msg)
+            raise FileNotFoundError(msg) from None
         except yaml.YAMLError as exc:
             msg = f"Invalid YAML configuration: {exc}"
-            raise ValueError(msg)
+            raise ValueError(msg) from exc
