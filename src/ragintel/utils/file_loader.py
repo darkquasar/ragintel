@@ -1,5 +1,3 @@
-import glob
-import os
 from pathlib import Path
 
 from langchain.docstore.document import Document
@@ -27,9 +25,9 @@ class FileLoader:
 
         return self.documents
 
-    def load_directory(self, directory: str, glob: str) -> list[Document]:
+    def load_directory(self, directory: str, glob_pattern: str) -> list[Document]:
         try:
-            loader = DirectoryLoader(directory, glob)
+            loader = DirectoryLoader(directory, glob_pattern)
             self.documents = loader.load()
             logger.info(f"Loaded {len(self.documents)} documents")
         except Exception as e:
@@ -48,42 +46,45 @@ class FileLoader:
         return self.documents
 
     def list_directory_recursive(
-        self, directory: str, glob_pattern: str, exclude_patterns: list[str] | None = None
-    ) -> list[str]:
-        """Recursively lists all files matching a glob pattern within a directory.
+        self,
+        directory: str | Path,
+        glob_patterns: list[str],
+        exclude_patterns: list[str] | None = None,
+        sample_only: bool = False,
+    ) -> list[Path]:
+        """
+        Recursively lists all files matching a glob pattern within a directory, excluding files and directories
+        matching any of the exclude patterns.
 
-        :param directory: str, the root directory to search for files.
-        :param glob_pattern: str, the glob pattern to match filenames against (e.g., "*.txt", "**/*.pdf").
-        :param exclude_patterns: List[str], a list of glob patterns to exclude files and directories from the search.
-
-        Example:
-        {
-            "directory": "/path/to/my/directory",
-            "glob_pattern": "*.txt",
-            "exclude_patterns": ["*.tmp", "temp/"]
-        }
+        Args:
+            directory (str or Path): The root directory to search for files.
+            glob_pattern (str): The glob pattern to match filenames against (e.g., "*.txt", "**/*.pdf").
+            exclude_patterns (List[str], optional): A list of glob patterns to exclude files and directories from the search.
 
         Returns:
-        - List[str], a list containing the full paths of all files matching the glob pattern within the specified directory and its subdirectories.
+            List[Path]: A list containing the Path objects of all files matching the glob pattern
+                        within the specified directory and its subdirectories.
         """
         if exclude_patterns is None:
             exclude_patterns = []
 
+        if sample_only:
+            logger.debug("Sampling 5 files for testing purposes")
+            counter = 0
+
+        directory = Path(directory)  # Ensure directory is a Path object
         all_files = []
 
-        for root, dirs, files in os.walk(directory):
-            # Exclude directories based on patterns
-            dirs[:] = [
-                d
-                for d in dirs
-                if not any(glob.fnmatch.fnmatch(d, pattern) for pattern in exclude_patterns)
-            ]
+        for glob_pattern in glob_patterns:
+            _glob_pattern = f"**/*{glob_pattern}"  # Convert to a proper n-depth glob
+            for path in directory.rglob(_glob_pattern):
+                if path.is_file() and not any(path.match(pattern) for pattern in exclude_patterns):
+                    all_files.append(path)
+                    if sample_only:
+                        counter += 1
+                        if counter == 5:
+                            break
 
-            for file in files:
-                if glob.fnmatch.fnmatch(file, glob_pattern) and not any(
-                    glob.fnmatch.fnmatch(file, pattern) for pattern in exclude_patterns
-                ):
-                    full_path = Path(root / file)
-                    all_files.append(full_path)
-
+        all_files = list(set(all_files))  # Remove duplicates
+        logger.info(f"Found {len(all_files)} files matching the glob pattern(s)")
         return all_files

@@ -4,12 +4,12 @@ import pytest
 from langchain.docstore.document import Document
 from loguru import logger
 
-from ragintel.tools.html_processor import Processor
+from ragintel.tools.loaders.html import HTMLLoader
 
 
 @pytest.fixture
 def processor():
-    return Processor()
+    return HTMLLoader()
 
 
 def test_convert_html_to_text_ragintel(processor):

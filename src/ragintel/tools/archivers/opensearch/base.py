@@ -8,7 +8,7 @@ from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 from opensearchpy import OpenSearch
 
-from ragintel.utils import config_loader
+from ragintel.utils.base import config_loader
 
 
 class OpenSearchDB:

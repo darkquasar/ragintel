@@ -5,7 +5,7 @@ from langchain.docstore.document import Document
 from loguru import logger
 
 
-class Processor:
+class HTMLLoader:
     def __init__(self):
         self.clean_html_docs = []
         self.documents = []

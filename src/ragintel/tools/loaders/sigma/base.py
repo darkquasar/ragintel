@@ -1,17 +1,21 @@
 # Description: This file contains the SigmaLoader class, which is responsible for loading Sigma rules into the database.
 import json
+import os
 import uuid
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import kuzu
 import yaml
+from langchain.docstore.document import Document
 from langchain_community.document_loaders import DirectoryLoader
 from loguru import logger
 
-from ragintel.templates.enums import EmbedderType
-from ragintel.tools.chromadb_tools import ChromaOps
-from ragintel.tools.github_loader import GitHubLoader
+from ragintel.nodes.detections import SigmaNode
+from ragintel.tools.archivers.chroma import ChromaOps
+from ragintel.tools.loaders.github import GitHubLoader
+from ragintel.utils.adaptors.pydantic import PydanticAdaptor
 from ragintel.utils.directory_manager import DirectoryManager
+from ragintel.utils.enums import EmbedderType
 from ragintel.utils.file_loader import FileLoader
 
 
@@ -22,8 +26,11 @@ class SigmaLoader:
         self.conn = kuzu.Connection(db)
         self.sigma_file_list = []
         self.directory_manager = DirectoryManager()
+        self.sigma_dest_directory = Path("./data/sigma")
 
-    def clone_sigma_repo(self, repo_path: str = "SigmaHQ/sigma") -> None:
+    def clone_sigma_repo(
+        self, repo_path: str = "SigmaHQ/sigma", dest_directory: str = "./data/sigma"
+    ) -> None:
         """
         Clones a Sigma repository from GitHub.
 
@@ -37,7 +44,8 @@ class SigmaLoader:
         - None
         """
 
-        self.sigma_dest_directory = Path("./data/sigma")
+        # This will override the default set by the __init__ method if someone chooses to provide a different path
+        self.sigma_dest_directory = Path(dest_directory)
         self.directory_manager.create_directory(self.sigma_dest_directory)
 
         # Clone the Sigma repository
@@ -56,36 +64,46 @@ class SigmaLoader:
                 "data/sigma/other/",
                 "data/sigma/documentation/",
                 "data/sigma/images/",
-            ]
+            ],
+            whatif=False,
         )
 
+    def load_rules_to_graph(
+        self,
+        file_paths: list[str] | None = None,
+        clone_repo: bool = True,
+        load_to_chroma: bool = False,
+        chroma_embedder: str = "chroma",
+        sample_only: bool = False,
+    ) -> list[Document] | None:
+        """
+        Loads Sigma rules into Kuzu Graph Database.
+
+        Args:
+            file_paths (list[str] | None): A list of file paths to Sigma rules YAML files. If None, the function will clone a Sigma repository and use the cloned files. Default is None.
+            load_to_chroma (bool): Whether to load the Sigma rules into ChromaDB for embedding and querying. Default is False.
+            chroma_embedder (str): The type of embedder to use for ChromaDB. Default is "chroma".
+
+        Returns:
+            None
+
+        This function creates a schema for Sigma rules in the database and loads Sigma rules from YAML files into the database.
+
+        Raises:
+            None
+        """
+        if clone_repo:
+            self.clone_sigma_repo()
+
+        # Grab list of Sigma rules files
         FileLoad = FileLoader()
         exclude_files = [".github", "deprecated", "other", "unsupported", "tests", "test"]
         self.sigma_file_list = FileLoad.list_directory_recursive(
             str(self.sigma_dest_directory), "*.yml", exclude_patterns=exclude_files
         )
 
-    def load_sigma_rules(
-        self,
-        file_paths: list[str] | None = None,
-        load_to_chroma: bool = False,
-        chroma_embedder: str = "chroma",
-    ) -> None:
-        """
-        Loads Sigma rules into Kuzu Graph Database.
-
-        :param None:
-        :return: None
-
-        This function creates a schema for Sigma rules in the database and loads Sigma rules from YAML files into the database.
-
-        Raises:
-        - None
-        """
-
         if file_paths is None:
             file_paths = []
-        self.clone_sigma_repo()
 
         if self.sigma_file_list != []:
             logger.info(
@@ -100,23 +118,17 @@ class SigmaLoader:
                 logger.error("No list of sigma rules files provided. Exiting.")
                 return
 
-        # Create schema
-        self.conn.execute("""
+        # Check if we only want to do a sample run
+        if sample_only:
+            logger.info("Sampling only 5 Sigma rules for testing purposes")
+            file_paths = file_paths[:5]
+
+        # Create KuzuDB Schema
+        # Start by retrieving from Pydantic the schema for SigmaNode
+        SigmaNodeSchema = PydanticAdaptor()
+        self.conn.execute(f"""
             CREATE NODE TABLE IF NOT EXISTS SigmaRule(
-                title STRING,
-                id STRING,
-                status STRING,
-                description STRING,
-                references STRING[],
-                author STRING,
-                date STRING,
-                modified STRING,
-                tags STRING[],
-                logsource STRING[],
-                detection STRING[],
-                falsepositives STRING[],
-                level STRING,
-                PRIMARY KEY (id)
+            {SigmaNodeSchema.pydantic_to_schema_string(SigmaNode)}
             )
         """)
 
@@ -125,7 +137,23 @@ class SigmaLoader:
                 with open(file_path) as f:
                     sigma_rule_data = yaml.safe_load(f)
 
-                logger.info(f"Loading Sigma rule: {sigma_rule_data['title']}")
+                # Convert back to YAML string so we can add it to "raw_document" field
+                yaml_string = yaml.dump(sigma_rule_data)
+                # Grab URL value for the rule too
+                base_url = "https://github.com/SigmaHQ/sigma/blob/master/"
+                # fmt: off
+                try:
+                    # Find the index of "rules/" in the path parts
+                    parts = file_path.parts
+                    sigma_index = parts.index("sigma")
+                    # Join the parts from "rules/" onwards
+                    relative_path = PurePosixPath(*parts[sigma_index + 1:])
+                    # Join the base URL and the relative path
+                    full_url = base_url + str(relative_path)
+                except ValueError:
+                    logger.error(f"Could not find 'rules/' in path: {file_path}")
+                # fmt: on
+                logger.debug(f"Loading Sigma rule: {sigma_rule_data['title']}")
 
                 # Process the 'detection' field dynamically, storing results in a list of strings
                 detection_data = []
@@ -172,6 +200,9 @@ class SigmaLoader:
 
                 self.conn.execute(f"""
                     CREATE (s:SigmaRule {{
+                        node_type: "detection",
+                        node_subtype: "sigma",
+                        source_url: "{full_url}",
                         title: {json.dumps(sigma_rule_data.get('title', 'NA'))},
                         id: "{sigma_rule_data.get('id', 'NA')}",
                         status: "{sigma_rule_data.get('status', 'NA')}",
@@ -184,16 +215,19 @@ class SigmaLoader:
                         logsource: {json.dumps(sigma_rule_data.get('logsource', ['NA']))},
                         detection: {json.dumps(sigma_rule_data.get('detection', ['NA']))},
                         falsepositives: {sigma_rule_data.get('falsepositives', ['NA'])},
-                        level: {json.dumps(sigma_rule_data.get('level', 'NA'))}
+                        level: {json.dumps(sigma_rule_data.get('level', 'NA'))},
+                        raw_document: {json.dumps(yaml_string)}
                     }})
                 """)
             except Exception as e:
                 logger.error(f"Error loading Sigma rule: {e}. Continuing to next rule.")
                 continue
 
+        logger.info("Finished loading Sigma rules to KuzuDB")
+
         if load_to_chroma:
             try:
-                self.load_sigma_to_chromadb(
+                self.load_rules_to_vector_store(
                     embedder=chroma_embedder, sigma_folder_path=self.sigma_dest_directory
                 )
             except Exception as e:
@@ -201,7 +235,7 @@ class SigmaLoader:
                     f"Error loading Sigma rules to ChromaDB: {e}. Continuing to next rule."
                 )
 
-    def load_sigma_to_chromadb(
+    def load_rules_to_vector_store(
         self,
         embedder: str = "chroma",
         sigma_folder_path: str = "data/sigma",
@@ -260,7 +294,10 @@ class SigmaLoader:
                 logger.error(f"Error editing Document: {e}. Continuing to next rule.")
                 continue
 
-        chroma_conn = ChromaOps(embedder=EmbedderType[embedder.upper()], collection_name="sigma")
+        chroma_conn = ChromaOps(
+            embedder=EmbedderType[embedder.upper()],
+            collection_name=os.getenv("CHROMA_DB_DETECTIONS_COLLECTION", "detections"),
+        )
         chroma_conn.embed_documents(docs)
 
         return

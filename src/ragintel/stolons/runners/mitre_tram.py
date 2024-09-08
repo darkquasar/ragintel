@@ -4,7 +4,7 @@ import transformers
 from loguru import logger
 from tqdm import tqdm
 
-from ragintel.utils import config_loader
+from ragintel.utils.base import config_loader
 
 
 class MitreTRAMInteractor:

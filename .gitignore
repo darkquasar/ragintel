@@ -110,3 +110,10 @@ site/
 
 # vscode extension - local history
 .history/
+
+# Anaconda
+.anaconda
+.conda
+## Some weird stuff that happens when you run conda or mamba and there is a problem with the environment, these files get dropped which contain references to the environment files and folders
+0.*
+1.*

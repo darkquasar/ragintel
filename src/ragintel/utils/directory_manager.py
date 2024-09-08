@@ -56,7 +56,7 @@ class DirectoryManager:
 
     def delete_directory(self, directory_paths: list[str], whatif: bool = True):
         """
-        Deletes directories and their contents, but only if they are within the "data" folder
+        Deletes directories and their contents, but only if they are within the "ragintel/data" folder
         in the user's home directory or the package root folder.
 
         Args:
@@ -79,9 +79,9 @@ class DirectoryManager:
             directory_paths = [directory_paths]
 
         allowed_data_dirs = [
-            Path.home() / "data",
+            Path.home() / "ragintel/data",
             Path(__file__).parent.resolve().parent / "data",
-            Path(__file__).resolve().parent.parent.parent.parent / "jupyter/data",
+            Path(__file__).resolve().parent.parent.parent.parent / "ragintel/jupyter/data",
         ]
 
         directories_to_delete = []  # Store directories that would be deleted

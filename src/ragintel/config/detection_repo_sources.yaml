@@ -1,0 +1,21 @@
+# List of repositories to load into Kuzu Graph DB and Chroma
+
+repos:
+  - repo_url: https://github.com/reprise99/Sentinel-Queries  # URL of the GitHub repository
+    skip: false  # Skip this repository if set to true
+    file_include_filter:
+      - ".kql"  # File extensions to pass on to the loader (e.g., ".py", ".txt")
+    file_exclude_filter:
+      - "README.md"  # File names to exclude from the loader (e.g., "README.md")
+    folder_exclude_list: # List of folders to exclude from the cloned repository
+    loader: "ragintel.tools.loaders.kql_gen.KQLLoader"    # Name of the ragintel loader to use
+    node_schema: "ragintel.nodes.detections.KQLNode" # Name of the Pydantic schema file that represents the node in the graph
+  - repo_url: https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules
+    skip: false
+    file_include_filter:
+      - ".md"
+    file_exclude_filter:
+      - "README.md"  # File names to exclude from the loader (e.g., "README.md")
+    folder_exclude_list:
+    loader: "ragintel.tools.loaders.kql_gen.KQLLoader"
+    node_schema: "ragintel.nodes.detections.KQLNode"

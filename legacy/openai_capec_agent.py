@@ -45,7 +45,7 @@ from pydantic import BaseModel
 
 from ragintel.templates import pydantinc_intel_base
 from ragintel.tools import opensearchdb_tools
-from ragintel.utils import config_loader
+from ragintel.utils.base import config_loader
 
 
 class OpenAICapecAgent:

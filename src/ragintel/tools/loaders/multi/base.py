@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 
-class MultiParser:
+class MultiLoader:
     def parse_text_from_file(file_name: str, content: io.BytesIO) -> str:
         if file_name.endswith(".pdf"):
             with pdfplumber.open(content) as pdf:

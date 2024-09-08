@@ -42,9 +42,9 @@ from langchain_openai import ChatOpenAI
 from loguru import logger
 from pydantic import BaseModel
 
-from ragintel.templates import pydantinc_intel_base
+from ragintel.stolons.templates import RagIntelMITRE
 from ragintel.tools import opensearchdb_tools
-from ragintel.utils import config_loader
+from ragintel.utils.base import config_loader
 
 
 class OpenAIInteractor:
@@ -173,7 +173,7 @@ class OpenAIInteractor:
     def interact_structured(
         self,
         query: str,
-        pydantic_template: BaseModel = None,
+        pydantic_template: BaseModel | None = None,
         prompt_template: str | None = None,
     ) -> str:
         """
@@ -190,7 +190,7 @@ class OpenAIInteractor:
         # 01. Build Pydantic Parser from Pydantic Class
         if pydantic_template is None:
             logger.info("Using default template: RagIntelMITRE")
-            pyd_template = pydantinc_intel_base.RagIntelMITRE
+            pyd_template = RagIntelMITRE
             parser = PydanticOutputParser(pydantic_object=pyd_template)
         else:
             logger.info("Using custom template")
