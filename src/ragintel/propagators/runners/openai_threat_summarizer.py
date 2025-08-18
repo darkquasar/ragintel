@@ -1,5 +1,5 @@
 """
-AGENT: OpenAI CAPEC Agent
+AGENT: OpenAI Threat Summarizer
 SUMMARY: >
   This interactor will summarize a threat report and provide MITRE ATTCK Tags
   based on OpenAI best guess. The OpenAIInteractor class provides an interface
@@ -34,7 +34,6 @@ EXAMPLE: |
     print(structured_response)
 """
 
-# Import statements
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -43,20 +42,20 @@ from langchain_openai import ChatOpenAI
 from loguru import logger
 from pydantic import BaseModel
 
-from ragintel.templates import pydantinc_intel_base
-from ragintel.tools import opensearchdb_tools
-from ragintel.helpers.base import config_loader
+from ragintel.binders.loaders.config import config_loader
+from ragintel.tools.templates import RagIntelMITRE
 
 
-class OpenAICapecAgent:
+class OpenAIInteractor:
     def __init__(
         self,
-        api_key: str = None,
-        config_file: str = None,
-        rag_db: opensearchdb_tools.OpenSearchDB = None,
+        api_key: str | None = None,
+        config_file: str | None = None,
+        vector_db_type: str = "chroma",
+        vector_db_path: str | None = None,
     ):
         """
-        Initialize the class OpenAICapecAgent.
+        Initialize the OpenAIInteractor.
 
         Args:
             api_key (str): The API key for the OpenAI language model.
@@ -75,7 +74,6 @@ class OpenAICapecAgent:
                 self.OPENAI_API_KEY = api_key
             except ValueError:
                 logger.error("Missing API key")
-                raise ValueError("Missing API key")
 
         # Set configuration values
         self.OPENAI_API_KEY = config.llm.config.api_key
@@ -99,7 +97,9 @@ class OpenAICapecAgent:
         """
         return "\n\n".join([d.page_content for d in docs])
 
-    def interact(self, query: str, template_type: str = "simple_text", template: str = None) -> str:
+    def interact(
+        self, query: str, template_type: str = "simple_text", template: str | None = None
+    ) -> str:
         """
         Interact with the language model and generate a plain text response.
 
@@ -138,16 +138,15 @@ class OpenAICapecAgent:
 
                 {context}
 
-                Query: {query}
+                Wuery: {query}
 
                 JSON formatted helpful answer:
                 """
         else:
             logger.info("Using custom template")
-            template = template
 
         prompt = ChatPromptTemplate.from_template(template)
-        logger.info("Loaded Prompte Template")
+        logger.info("Loaded Prompt Template")
 
         # RAG
         model = ChatOpenAI(
@@ -169,15 +168,13 @@ class OpenAICapecAgent:
             | StrOutputParser()
         )
 
-        answer = chain.invoke(query)
-
-        return answer
+        return chain.invoke(query)
 
     def interact_structured(
         self,
         query: str,
-        pydantic_template: BaseModel = None,
-        prompt_template: str = None,
+        pydantic_template: BaseModel | None = None,
+        prompt_template: str | None = None,
     ) -> str:
         """
         Interact with the language model and generate a structured JSON response.
@@ -193,7 +190,7 @@ class OpenAICapecAgent:
         # 01. Build Pydantic Parser from Pydantic Class
         if pydantic_template is None:
             logger.info("Using default template: RagIntelMITRE")
-            pyd_template = pydantinc_intel_base.RagIntelMITRE
+            pyd_template = RagIntelMITRE
             parser = PydanticOutputParser(pydantic_object=pyd_template)
         else:
             logger.info("Using custom template")
@@ -245,6 +242,4 @@ class OpenAICapecAgent:
         )
 
         # Invoke Chain
-        result = chain.invoke(query)
-
-        return result
+        return chain.invoke(query)

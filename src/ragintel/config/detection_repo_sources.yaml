@@ -2,20 +2,53 @@
 
 repos:
   - repo_url: https://github.com/reprise99/Sentinel-Queries  # URL of the GitHub repository
-    skip: false  # Skip this repository if set to true
+    skip: True  # Skip this repository if set to true
     file_include_filter:
-      - ".kql"  # File extensions to pass on to the loader (e.g., ".py", ".txt")
+      - "*.kql"  # File extensions to pass on to the loader (e.g., ".py", ".txt")
     file_exclude_filter:
       - "README.md"  # File names to exclude from the loader (e.g., "README.md")
     folder_exclude_list: # List of folders to exclude from the cloned repository
-    loader: "ragintel.tools.loaders.kql_gen.KQLLoader"    # Name of the ragintel loader to use
-    node_schema: "ragintel.nodes.detections.KQLNode" # Name of the Pydantic schema file that represents the node in the graph
-  - repo_url: https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules
-    skip: false
+    loader: "ragintel.propagators.simple.repository_loader.general.GenericFileLoader" # Name of the ragintel loader to use
+    node_schema: "ragintel.nodes.detections.GenFileNode" # Name of the Pydantic schema file that represents the node in the graph
+    vector_collection: "detections" # Name of the collection in the vector database to store parsed nodes
+    graph_collection: "KQL" # Name of the collection in the graph to store nodes and edges
+  - repo_url: https://github.com/SigmaHQ/sigma
+    skip: False
     file_include_filter:
-      - ".md"
+      - "*.yml"
     file_exclude_filter:
-      - "README.md"  # File names to exclude from the loader (e.g., "README.md")
+      - "README.md"
     folder_exclude_list:
-    loader: "ragintel.tools.loaders.kql_gen.KQLLoader"
-    node_schema: "ragintel.nodes.detections.KQLNode"
+      - "tests"
+      - "unsupported"
+      - ".github"
+      - "deprecated"
+      - "other"
+      - "documentation"
+      - "images"
+    loader: "ragintel.propagators.simple.repository_loader.sigma.SigmaLoader2"
+    node_schema: "ragintel.nodes.detections.SigmaNode2"
+    vector_collection: "detections"
+    graph_collection: "detections"
+  - repo_url: https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules
+    skip: true
+    file_include_filter:
+      - "*.md"
+    file_exclude_filter:
+      - "README.md"
+    folder_exclude_list:
+    loader: "ragintel.propagators.simple.repository_loader.general.GenericFileLoader"
+    node_schema: "ragintel.nodes.detections.GenFileNode"
+    vector_collection: "detections"
+    graph_collection: "detections"
+  - repo_url: https://github.com/mitre/cti
+    skip: true
+    file_include_filter:
+      - "*"
+    file_exclude_filter:
+      - "README.md"
+    folder_exclude_list:
+    loader: "ragintel.binders.interactors.mitre.MitreLoader"
+    node_schema:
+    vector_collection:
+    graph_collection:

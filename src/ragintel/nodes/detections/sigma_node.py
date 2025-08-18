@@ -8,6 +8,9 @@ class SigmaNode(BaseModel):
     source_url: str
     title: str
     id: str
+    sigma_id: str
+    file_name: str
+    file_hash: str
     status: str
     description: str
     references: list[str]

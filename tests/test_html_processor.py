@@ -4,7 +4,7 @@ import pytest
 from langchain.docstore.document import Document
 from loguru import logger
 
-from ragintel.tools.loaders.html import HTMLLoader
+from ragintel.binders.loaders.html import HTMLLoader
 
 
 @pytest.fixture
